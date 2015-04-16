@@ -259,10 +259,15 @@ function SBAN_canunban(steamid, ply)
 end
 
 function SBAN_updateban(steamid, ply, bantime, reason, name)
+	local updateName = "[Unknown]"
+	if name and string.len(name) > 0 then
+		updateName = name
+	end
+	
 	local qTab = {}
 	qTab.wait = false
 	local query = "UPDATE "..SBAN_PREFIX.."bans SET ends = created + "..bantime
-	query = query .. ", length = "..bantime..", name = '"..database_sban:escape(name).."', reason = '"..database_sban:escape(reason).."' WHERE authid = '"..database_sban:escape(steamid).."' and RemoveType is null"
+	query = query .. ", length = "..bantime..", name = '"..database_sban:escape(updateName).."', reason = '"..database_sban:escape(reason).."' WHERE authid = '"..database_sban:escape(steamid).."' and RemoveType is null"
 	SBAN_SQL_Query(query, qTab)
 	XGUIRefreshBans()
 end
