@@ -411,16 +411,16 @@ local function DetermineBanned(result, qTab)
 
 		ply.BanCount = #result
 
+		local banPlural = (ply.BanCount > 1) and "bans" or "ban"
+		local banText = ""
+		if ply.familyshared then
+			banText = string.format("%s's lender (%s) has %s %s on record.", ply:Nick(), steamid, ply.BanCount, banPlural)
+		else
+			banText = string.format("%s (%s) has %s %s on record.", ply:Nick(), steamid, ply.BanCount, banPlural)
+		end
+			
 		if announceBanCount then
 		
-			local banPlural = (ply.BanCount > 1) and "bans" or "ban"
-			local banText = ""
-			if ply.familyshared then
-				banText = string.format("%s's lender (%s) has %s %s on record.", ply:Nick(), steamid, ply.BanCount, banPlural)
-			else
-				banText = string.format("%s (%s) has %s %s on record.", ply:Nick(), steamid, ply.BanCount, banPlural)
-			end
-			
 			timer.Create("BanCount"..steamid, 10, 1, function()
 				if !IsValid(ply) then return end
 				for k,v in pairs(player.GetAll()) do
@@ -464,16 +464,13 @@ local function AnnounceLender(ply,lender)
 	
 end
 
-local function HandleSharedPlayer(result, qTab)
-	local lenderSteamID = qTab.steamid
-	local ply = qTab.ply
+local function HandleSharedPlayer(ply, lenderSteamID)
 	
 	apiErrorCount = (apiErrorCount > 1) and (apiErrorCount - 1) or 0
 	if !IsValid(ply) then return end
+
+	AnnounceLender(ply,lenderSteamID)
 	
-	local lender = #result > 0 and result[1].name .. " (" .. lenderSteamID .. ")" or lenderSteamID
-	
-	AnnounceLender(ply,lender)
 	ply.familyshared = true
 	ply.lenderid = lenderSteamID
     StartBanCheck(ply, lenderSteamID)
@@ -516,12 +513,8 @@ local function CheckFamilySharing(ply)
             if lender ~= "0" then
 				if !IsValid(ply) then return end
 				local lenderSteamID = util.SteamIDFrom64(lender)
-				local qTab = {}
-				qTab.ply = ply
-				qTab.steamid = lenderSteamID
-				qTab.cb = function(result, qTab) HandleSharedPlayer(result, qTab) end
-				
-				SBAN_SQL_Query("SELECT sid64, name FROM player_data WHERE sid64 = '" ..lender.. "'", qTab)
+				HandleSharedPlayer(ply, lenderSteamID)
+
             end
         end,
         
