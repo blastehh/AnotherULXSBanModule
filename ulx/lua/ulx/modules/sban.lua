@@ -1,5 +1,5 @@
 --[[
---		Another ULX Source Bans Module 0.3
+--		Another ULX Source Bans Module 0.4
 --
 --		CREDITS:
 --		This sban module was based on a very old version of ULX Source Bans Module by FunDK http://facepunch.com/showthread.php?t=1311847
@@ -43,9 +43,17 @@ local banListRefreshTime	= 119			-- Seconds between refreshing the banlist in XG
 
 -- Table of groups who will get sharing/ban count notifications when players join.
 -- Follow the format below to add more groups, make sure to add a comma if it isn't the last entry.
+
 local adminTable = {
 	["superadmin"] = true,
 	["admin"] = true
+}
+
+
+-- This table excludes named groups from being removed, even if the option is turned on.
+-- Format is the same as the admin table above.
+local excludedGroups = {
+	["vip"] = true
 }
 
 -- Don't touch these
@@ -144,7 +152,7 @@ database_sban:connect()
 -- ######################################################
 
 local function RemoveAdmin(ply)
-	if(ULib.ucl.getUserRegisteredID(ply) != nil) and removeFromGroup then
+	if(ULib.ucl.getUserRegisteredID(ply) != nil) and removeFromGroup and !excludedGroups[ply:GetUserGroup()] then
 		ulx.removeuserid(ply, ply:SteamID())
 	end
 end
