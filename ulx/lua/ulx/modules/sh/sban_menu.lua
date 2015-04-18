@@ -61,7 +61,7 @@ sbanid:addParam{ type=ULib.cmds.StringArg, hint="reason", ULib.cmds.optional, UL
 sbanid:defaultAccess( ULib.ACCESS_SUPERADMIN )
 sbanid:help( "Bans steamid." )
 
-------------------------------Unban SourceBans----------------------
+------------------------------ Unban SourceBans ------------------------------
 function ulx.unsban( calling_ply, steamid, ureason )
 	steamid = steamid:upper()
 	if not ULib.isValidSteamID( steamid ) then
@@ -95,3 +95,86 @@ unsban:addParam{ type=ULib.cmds.StringArg, hint="Steam ID" }
 unsban:addParam{ type=ULib.cmds.StringArg, hint="Unban reason", ULib.cmds.takeRestOfLine }
 unsban:defaultAccess( ULib.ACCESS_ADMIN )
 unsban:help( "Unbans Steam ID from SourceBans." )
+
+------------------------------ Vote SBan ------------------------------
+
+local function voteSBanDone2( t, target, time, ply, reason )
+	local shouldBan = false
+
+	if t.results[ 1 ] and t.results[ 1 ] > 0 then
+		ulx.logUserAct( ply, target, "#A approved the votesban against #T (" .. time .. " minutes) (" .. (reason or "") .. ")" )
+		shouldBan = true
+	else
+		ulx.logUserAct( ply, target, "#A denied the votesban against #T" )
+	end
+
+	if shouldBan then
+		
+	local banTimeWords = "for #i minute(s)"
+	if time == 0 then banTimeWords = "permanently" end
+	local str = "#A banned #T " .. banTimeWords
+	if reason and reason ~= "" then str = str .. " (#s)" end
+	ulx.fancyLogAdmin( ply, str, target, time ~= 0 and time or reason, reason )
+	
+	ULib.queueFunctionCall( SBAN_banplayer, target, time*60, reason, 0)
+	
+		--[[if reason and reason ~= "" then
+			ULib.kick( target, "Vote ban successful. (" .. reason .. ")" )
+		else
+			ULib.kick( target, "Vote ban successful." )
+		end]]--
+	end
+end
+
+local function voteSBanDone( t, target, time, ply, reason )
+	local results = t.results
+	local winner
+	local winnernum = 0
+	for id, numvotes in pairs( results ) do
+		if numvotes > winnernum then
+			winner = id
+			winnernum = numvotes
+		end
+	end
+
+	local ratioNeeded = GetConVarNumber( "ulx_votesbanSuccessratio" )
+	local minVotes = GetConVarNumber( "ulx_votesbanMinvotes" )
+	local str
+	if winner ~= 1 or winnernum < minVotes or winnernum / t.voters < ratioNeeded then
+		str = "Vote results: User will not be banned. (" .. (results[ 1 ] or "0") .. "/" .. t.voters .. ")"
+	else
+		str = "Vote results: User will now be banned for " .. time .. " minutes, pending approval. (" .. winnernum .. "/" .. t.voters .. ")"
+		ulx.doVote( "Accept result and ban " .. target:Nick() .. "?", { "Yes", "No" }, voteSBanDone2, 30000, { ply }, true, target, time, ply, reason )
+	end
+
+	ULib.tsay( _, str ) -- TODO, color?
+	ulx.logString( str )
+	Msg( str .. "\n" )
+end
+
+function ulx.voteSBan( calling_ply, target_ply, minutes, reason )
+	if ulx.voteInProgress then
+		ULib.tsayError( calling_ply, "There is already a vote in progress. Please wait for the current one to end.", true )
+		return
+	end
+
+	local msg = "SBan " .. target_ply:Nick() .. " for " .. minutes .. " minutes?"
+	if reason and reason ~= "" then
+		msg = msg .. " (" .. reason .. ")"
+	end
+
+	ulx.doVote( msg, { "Yes", "No" }, voteSBanDone, _, _, _, target_ply, minutes, calling_ply, reason )
+	if reason and reason ~= "" then
+		ulx.fancyLogAdmin( calling_ply, "#A started a votesban of #i minute(s) against #T (#s)", minutes, target_ply, reason )
+	else
+		ulx.fancyLogAdmin( calling_ply, "#A started a votesban of #i minute(s) against #T", minutes, target_ply )
+	end
+end
+local votesban = ulx.command( CATEGORY_NAME, "ulx votesban", ulx.voteSBan, "!votesban" )
+votesban:addParam{ type=ULib.cmds.PlayerArg }
+votesban:addParam{ type=ULib.cmds.NumArg, min=0, default=1440, hint="minutes", ULib.cmds.allowTimeString, ULib.cmds.optional }
+votesban:addParam{ type=ULib.cmds.StringArg, hint="reason", ULib.cmds.optional, ULib.cmds.takeRestOfLine, completes=ulx.common_kick_reasons }
+votesban:defaultAccess( ULib.ACCESS_ADMIN )
+votesban:help( "Starts a public SourceBan vote against target player." )
+if SERVER then ulx.convar( "votesbanSuccessratio", "0.7", _, ULib.ACCESS_ADMIN ) end -- The ratio needed for a votesban to succeed
+if SERVER then ulx.convar( "votesbanMinvotes", "3", _, ULib.ACCESS_ADMIN ) end -- Minimum votes needed for votesban

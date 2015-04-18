@@ -1,5 +1,5 @@
 --[[
---		Another ULX Source Bans Module 0.4
+--		Another ULX Source Bans Module 0.5
 --
 --		CREDITS:
 --		This sban module was based on a very old version of ULX Source Bans Module by FunDK http://facepunch.com/showthread.php?t=1311847
@@ -16,8 +16,6 @@
 --]]
 
 require ("mysqloo")
-
-CreateConVar("ulx_sban_serverid", "-1", FCVAR_NONE, "Sets the SBAN ServerID for the Source Bans ULX module")
 
 -- Config section
 -- Add ulx_sban_serverid to your server.cfg
@@ -43,7 +41,6 @@ local banListRefreshTime	= 119			-- Seconds between refreshing the banlist in XG
 
 -- Table of groups who will get sharing/ban count notifications when players join.
 -- Follow the format below to add more groups, make sure to add a comma if it isn't the last entry.
-
 local adminTable = {
 	["superadmin"] = true,
 	["admin"] = true
@@ -57,6 +54,7 @@ local excludedGroups = {
 }
 
 -- Don't touch these
+CreateConVar("ulx_sban_serverid", "-1", FCVAR_NONE, "Sets the SBAN ServerID for the Source Bans ULX module")
 local apiErrorCount = 0
 local apiLastCheck = apiLastCheck or 0
 local SBAN_Queue = SBAN_Queue or {}
@@ -67,6 +65,15 @@ cvars.AddChangeCallback( "ulx_sban_serverid", function()
 	if(GetConVar("ulx_sban_serverid"):GetInt() != -1) then
 		SBAN_SERVERID = GetConVar("ulx_sban_serverid"):GetInt()
 		print("[SBAN][Init] ServerID: "..SBAN_SERVERID)
+	end
+end)
+
+hook.Add("Initialize", "CheckServerID", function()
+	if !SBAN_SERVERID then
+		if !GetConVar("ulx_sban_serverid"):GetInt() then
+			ErrorNoHalt("[SBAN][ERROR] ulx_sban_serverid has not been set in server.cfg!\n")
+		end
+		SBAN_SERVERID = GetConVar("ulx_sban_serverid"):GetInt() or 1
 	end
 end)
 
