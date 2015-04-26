@@ -223,7 +223,7 @@ function unbans.init()
 		for i = startValue, endValue, ascending and -1 or 1 do
 			local steamID = sortTable[i][1]
 			local bandata = SBanTable[steamID]
-
+			if !bandata then continue end
 			-- Handle filters. This is confusing, but essentially 0 means skip check, 1 means restrict if condition IS true, 2+ means restrict if condition IS NOT true. 
 			if not ( filterPermaBan > 0 and ( ( tonumber( bandata.unban ) == 0 ) == ( filterPermaBan == 1 ) ) ) then
 				if not ( filterIncomplete > 0 and ( ( bandata.time == nil ) == ( filterIncomplete == 1 ) ) ) then
