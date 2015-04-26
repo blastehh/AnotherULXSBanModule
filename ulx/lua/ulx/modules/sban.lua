@@ -1,5 +1,5 @@
 --[[
---		Another ULX Source Bans Module 0.5
+--		Another ULX Source Bans Module 0.6
 --
 --		CREDITS:
 --		This sban module was based on a very old version of ULX Source Bans Module by FunDK http://facepunch.com/showthread.php?t=1311847
@@ -290,19 +290,20 @@ end
 -- #################################################
 
 local function UpdateBanList(result, qTab)
-	SBanTable = {}
+	local tempTable = {}
 	for k,v in pairs(result) do
-		SBanTable[v.authid] = {}
-		SBanTable[v.authid].bid = v.bid
-		SBanTable[v.authid].sid = tonumber(v.sid) > 0 and v.sid or "Web"
-		SBanTable[v.authid].admin = v.admin
-		SBanTable[v.authid].adminid = v.aid
-		SBanTable[v.authid].name = v.name
-		SBanTable[v.authid].reason = v.reason
-		SBanTable[v.authid].steamID = v.authid
-		SBanTable[v.authid].time = v.created
-		SBanTable[v.authid].unban = v.created == v.ends and 0 or v.ends
+		tempTable[v.authid] = {}
+		tempTable[v.authid].bid = v.bid
+		tempTable[v.authid].sid = tonumber(v.sid) > 0 and v.sid or "Web"
+		tempTable[v.authid].admin = v.admin
+		tempTable[v.authid].adminid = v.aid
+		tempTable[v.authid].name = v.name
+		tempTable[v.authid].reason = v.reason
+		tempTable[v.authid].steamID = v.authid
+		tempTable[v.authid].time = v.created
+		tempTable[v.authid].unban = v.created == v.ends and 0 or v.ends
 	end
+	SBanTable = tempTable
 end
 
 function SBAN_RetrieveBans()
