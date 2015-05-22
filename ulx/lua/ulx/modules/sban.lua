@@ -196,13 +196,14 @@ ULib.ucl.registerAccess( "ulx editsbanall", ULib.ACCESS_SUPERADMIN, "Ability to 
 -- ############### Global Helper functions ##############
 -- ######################################################
 
-function SBAN_doban(ip, steamid, name, length, reason, callingadmin, lenderid)
+function SBAN_doban(inip, steamid, name, length, reason, callingadmin, lenderid)
 	local adminid = 0
 	if type(callingadmin) == "number" then
 		adminid = callingadmin
 	elseif callingadmin:IsPlayer() and type(callingadmin.sb_aid) == "number" then
 		adminid = callingadmin.sb_aid
 	end
+	local ip = string.Explode(":", inip)[1]
 	local qTab = {}
 	qTab.wait = false
 	
