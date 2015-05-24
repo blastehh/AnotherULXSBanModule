@@ -254,7 +254,7 @@ function unbans.init()
 		-- Send bans to client via custom handling.
 		xgui.sendDataEvent( ply, 7, "unbans", bansToSend )
 	end
-	xgui.addCmd( "getbans", unbans.sendBansToUser )
+	xgui.addCmd( "getsbans", unbans.sendBansToUser )
 --[[
 	--Hijack the addBan function to update XGUI's ban info.
 	local banfunc = ULib.addBan

@@ -449,7 +449,7 @@ function xunbans.clearbans()
 end
 
 function xunbans.retrieveBans()
-	RunConsoleCommand( "xgui", "getbans",
+	RunConsoleCommand( "xgui", "getsbans",
 		sortMode,			-- Sort Type
 		searchFilter,		-- Filter String
 		hidePerma,			-- Hide permabans?
