@@ -1,5 +1,5 @@
 --[[
---		Another ULX Source Bans Module 0.7
+--		Another ULX Source Bans Module 0.8
 --
 --		CREDITS:
 --		This sban module was based on a very old version of ULX Source Bans Module by FunDK http://facepunch.com/showthread.php?t=1311847
