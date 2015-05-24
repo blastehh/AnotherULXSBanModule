@@ -95,7 +95,7 @@ function unbans.init()
 		end
 		SBAN_updateban( steamID, ply, bantime*60, reason, name)
 	end
-	xgui.addCmd( "updateBan", unbans.updateBan )
+	xgui.addCmd( "updatesBan", unbans.updateBan )
 
 	--Misc functions
 	function unbans.processBans(wait)

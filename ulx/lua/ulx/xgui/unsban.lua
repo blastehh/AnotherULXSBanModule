@@ -347,7 +347,7 @@ function xgui.ShowSBanWindow( ply, ID, doFreeze, isUpdate, bandata )
 	xlib.makebutton{ x=45, y=150, w=75, label=( isUpdate and "Update" or "Ban!" ), parent=xgui_banwindow }.DoClick = function()
 		if isUpdate then
 			local function performUpdate(btime)
-				RunConsoleCommand( "xgui", "updateBan", steamID:GetValue(), btime, reason:GetValue(), name:GetValue() )
+				RunConsoleCommand( "xgui", "updatesBan", steamID:GetValue(), btime, reason:GetValue(), name:GetValue() )
 				xgui_banwindow:Remove()
 			end
 			btime = banpanel:GetMinutes()
@@ -377,7 +377,7 @@ function xgui.ShowSBanWindow( ply, ID, doFreeze, isUpdate, bandata )
 				if name:GetValue() == "" then
 					RunConsoleCommand( "ulx", "sbanid", steamID:GetValue(), banpanel:GetValue(), reason:GetValue() )
 				else
-					RunConsoleCommand( "xgui", "updateBan", steamID:GetValue(), banpanel:GetMinutes(), reason:GetValue(), ( name:GetValue() ~= "" and name:GetValue() or nil ) )
+					RunConsoleCommand( "xgui", "updatesBan", steamID:GetValue(), banpanel:GetMinutes(), reason:GetValue(), ( name:GetValue() ~= "" and name:GetValue() or nil ) )
 				end
 			else
 				RunConsoleCommand( "ulx", "sban", "$" .. ULib.getUniqueIDForPlayer( isOnline ), banpanel:GetValue(), reason:GetValue() )
