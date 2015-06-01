@@ -12,6 +12,7 @@ xunbans.banlist.DoDoubleClick = function( self, LineID, line )
 end
 xunbans.banlist.OnRowRightClick = function( self, LineID, line )
 	local menu = DermaMenu()
+	menu:SetSkin(xgui.settings.skin)
 	menu:AddOption( "Details...", function() xunbans.ShowBanDetailsWindow( xgui.data.unbans.cache[LineID] ) end )
 	menu:AddOption( "Edit Ban...", function() xgui.ShowSBanWindow( nil, line:GetValue( 5 ), nil, true, xgui.data.unbans.cache[LineID] ) end )
 	menu:AddOption( "Unban...", function() xunbans.RemoveBan( line:GetValue( 5 ), xgui.data.unbans.cache[LineID] ) end )
@@ -99,6 +100,7 @@ end
 
 local function banUserList( doFreeze )
 	local menu = DermaMenu()
+	menu:SetSkin(xgui.settings.skin)
 	for k, v in ipairs( player.GetAll() ) do
 		menu:AddOption( v:Nick(), function() xgui.ShowSBanWindow( v, v:SteamID(), doFreeze ) end )
 	end
@@ -428,21 +430,21 @@ function xunbans.bansRefreshed()
 		xunbans.retrieveBans()
 	end
 end
-xgui.hookEvent( "unbans", "process", xunbans.bansRefreshed )
+xgui.hookEvent( "unbans", "process", xunbans.bansRefreshed, "sbansRefresh" )
 
 function xunbans.banPageRecieved( data )
 	xgui.data.unbans.cache = data
 	xunbans.clearbans()
 	xunbans.populateBans()
 end
-xgui.hookEvent( "unbans", "data", xunbans.banPageRecieved )
+xgui.hookEvent( "unbans", "data", xunbans.banPageRecieved, "sbansGotPage" )
 
 function xunbans.checkCache()
 	if xgui.data.unbans.cache and xgui.data.unbans.count ~= 0 and table.Count(xgui.data.unbans.cache) == 0 then
 		xunbans.retrieveBans()
 	end
 end
-xgui.hookEvent( "onOpen", nil, xunbans.checkCache )
+xgui.hookEvent( "onOpen", nil, xunbans.checkCache, "sbansCheckCache" )
 
 function xunbans.clearbans()
 	xunbans.banlist:Clear()
@@ -459,6 +461,7 @@ function xunbans.retrieveBans()
 end
 
 function xunbans.populateBans()
+	if xgui.data.unbans.cache == nil then return end
 	local cache = xgui.data.unbans.cache
 	local count = cache.count or xgui.data.unbans.count
 	numPages = math.max( 1, math.ceil( count / 17 ) )
@@ -482,6 +485,7 @@ function xunbans.populateBans()
 					tonumber( baninfo.unban ) )
 	end
 end
+xunbans.populateBans()
 
 function xunbans.xban( ply, cmd, args, dofreeze )
 	if args[1] and args[1] ~= "" then

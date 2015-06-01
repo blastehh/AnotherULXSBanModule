@@ -77,7 +77,7 @@ function server.processModules()
 end
 server.processModules()
 
-xgui.hookEvent( "onProcessModules", nil, server.processModules )
+xgui.hookEvent( "onProcessModules", nil, server.processModules, "serverSettingsProcessModules" )
 xgui.addSettingModule( "Server", server, "icon16/server.png", "xgui_svsettings" )
 
 
@@ -137,6 +137,7 @@ end
 adverts.tree.DoRightClick = function( self, node )
 	self:SetSelectedItem( node )
 	local menu = DermaMenu()
+	menu:SetSkin(xgui.settings.skin)
 	if not node.data then
 		menu:AddOption( "Rename Group...", function() adverts.RenameAdvert( node:GetValue() ) end )
 	end
@@ -365,7 +366,8 @@ end
 function adverts.onOpen()
 	ULib.queueFunctionCall( adverts.tree.InvalidateLayout, adverts.tree )
 end
-xgui.hookEvent( "adverts", "process", adverts.updateAdverts )
+adverts.updateAdverts() -- For autorefresh
+xgui.hookEvent( "adverts", "process", adverts.updateAdverts, "serverUpdateAdverts" )
 xgui.addSubModule( "ULX Adverts", adverts, nil, "server" )
 
 ------------------------------Echo-------------------------------
@@ -438,7 +440,7 @@ function plist.motdURLText:UpdateConvarValue()
 end
 function plist.motdURLText:OnEnter() self:UpdateConvarValue() end
 function plist.ConVarUpdated( sv_cvar, cl_cvar, ply, old_val, new_val )
-	if cl_cvar == "ulx_showmotd" then
+	if cl_cvar == "ulx_showMotd" then
 		if tonumber( new_val ) == nil then --MOTD is enabled and set to a URL
 			plist.motdEnabled:SetValue( 1 )
 			plist.motdURLEnabled:SetValue( 1 )
@@ -512,7 +514,8 @@ gimps.updateGimps = function()
 		gimps.list:AddLine( v )
 	end
 end
-xgui.hookEvent( "gimps", "process", gimps.updateGimps )
+gimps.updateGimps()
+xgui.hookEvent( "gimps", "process", gimps.updateGimps, "serverUpdateGimps" )
 xgui.addSubModule( "ULX Gimps", gimps, nil, "server" )
 
 ------------------------Kick/Ban Reasons-------------------------
@@ -549,7 +552,8 @@ panel.updateBanReasons = function()
 		panel.list:AddLine( v )
 	end
 end
-xgui.hookEvent( "banreasons", "process", panel.updateBanReasons )
+panel.updateBanReasons()
+xgui.hookEvent( "banreasons", "process", panel.updateBanReasons, "serverUpdateBanReasons" )
 xgui.addSubModule( "ULX Kick/Ban Reasons", panel, "xgui_managebans", "server" )
 
 --------------------------Log Settings---------------------------
@@ -626,7 +630,8 @@ panel.updateList = function()
 		end
 	end
 end
-xgui.hookEvent( "votemaps", "process", panel.updateList )
+panel.updateList()
+xgui.hookEvent( "votemaps", "process", panel.updateList, "serverUpdateVotemapList" )
 xgui.addSubModule( "ULX Player Votemap List", panel, nil, "server" )
 
 ---------------------Player Votemap Settings---------------------
