@@ -44,7 +44,10 @@ function ulx.sbanid( calling_ply, steamid, minutes, reason )
 
 	SBAN_doban( (targetPly and targetPly:IPAddress() or "unknown"), steamid, (name and name or "[Unknown]"), minutes*60, reason, calling_ply)
 	if targetPly then
-		ULib.queueFunctionCall( targetPly:Kick, reason )
+		timer.Simple(0, function()
+			if !IsValid(targetPly) then return end
+			targetPly:Kick(reason)
+		end)
 	end
 
 end
