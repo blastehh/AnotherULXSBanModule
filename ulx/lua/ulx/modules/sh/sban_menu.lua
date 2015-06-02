@@ -30,29 +30,24 @@ function ulx.sbanid( calling_ply, steamid, minutes, reason )
 	end
 
 	local name
-	local plys = player.GetAll()
-	for i=1, #plys do
-		if plys[ i ]:SteamID() == steamid then
-			name = plys[ i ]:Nick()
-			break
-		end
-	end
+	local targetPly = player.GetBySteamID(steamid)
+	name = targetPly and targetPly:Nick() or "[Unknown]"
 	
 	local time = "for #i minute(s)"
 	if minutes == 0 then time = "permanently" end
 	local str = "#A banned steamid #s "
-	if name then
+	if name != "[Unknown]" then
 		steamid = steamid .. "(" .. name .. ") "
 	end
 	str = str .. time
 	if reason and reason ~= "" then str = str .. " (#4s)" end
 	ulx.fancyLogAdmin( calling_ply, str, steamid, minutes ~= 0 and minutes or reason, reason )
-	
-	if(name != nil) then
-		SBAN_doban("unknown", steamid, name, minutes*60, reason, calling_ply)
-	else
-		SBAN_doban("unknown", steamid, "[Unknown]", minutes*60, reason, calling_ply)
+
+	SBAN_doban( (targetPly and targetPly:IPAddress() or "unknown"), steamid, name, minutes*60, reason, calling_ply)
+	if targetPly then
+		ULib.queueFunctionCall( targetPly:Kick, reason )
 	end
+
 end
 local sbanid = ulx.command( CATEGORY_NAME, "ulx sbanid", ulx.sbanid )
 sbanid:addParam{ type=ULib.cmds.StringArg, hint="steamid" }
