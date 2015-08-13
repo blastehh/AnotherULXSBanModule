@@ -1,5 +1,5 @@
 --[[
---		Another ULX Source Bans Module 0.10
+--		Another ULX Source Bans Module 0.11
 --
 --		CREDITS:
 --		This sban module was based on a very old version of ULX Source Bans Module by FunDK http://facepunch.com/showthread.php?t=1311847
@@ -77,21 +77,6 @@ hook.Add("Initialize", "CheckServerID", function()
 	end
 end)
 
-database_sban.onConnected = function()
-	ServerLog("[SBAN][Init] Mysql successfully connected\n")
-	if SBAN_Queue then
-		for k, v in pairs( SBAN_Queue ) do
-			SBAN_SQL_Query( v[ 1 ], v[ 2 ]  )
-		end
-		SBAN_Queue = {}
-	end
-end
-
-database_sban.onConnectionFailed = function( db, err ) 
-	ServerLog("[SBAN][Init] Mysql failed to connect\n")
-	ServerLog("[SBAN][Init] Mysql Error: "..tostring(err).."\n")
-end
-
 -- ############### Main Database Query Function ################
 -- #############################################################
 local function SBAN_SQL_Query(sql, qTab)
@@ -151,6 +136,21 @@ local function SBAN_SQL_Query(sql, qTab)
 	
 end
 
+database_sban.onConnected = function()
+	ServerLog("[SBAN][Init] Mysql successfully connected\n")
+	SBAN_SQL_Query("SET NAMES UTF8", {})
+	if SBAN_Queue then
+		for k, v in pairs( SBAN_Queue ) do
+			SBAN_SQL_Query( v[ 1 ], v[ 2 ]  )
+		end
+		SBAN_Queue = {}
+	end
+end
+
+database_sban.onConnectionFailed = function( db, err ) 
+	ServerLog("[SBAN][Init] Mysql failed to connect\n")
+	ServerLog("[SBAN][Init] Mysql Error: "..tostring(err).."\n")
+end
 
 -- Initial connect
 database_sban:connect()
