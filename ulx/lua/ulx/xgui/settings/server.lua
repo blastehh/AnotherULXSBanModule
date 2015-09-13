@@ -50,6 +50,26 @@ server.catList.OnRowSelected = function( self, LineID, Line )
 	xlib.animQueue_start()
 end
 
+function xgui.openServerModule( name )
+	name = string.lower( name )
+	for i = 1, #xgui.modules.submodule do
+		local module = xgui.modules.submodule[i]
+		if module.mtype == "server" and string.lower(module.name) == name then
+			if module.panel ~= server.curPanel then
+				server.catList:ClearSelection()
+				for i=1, #server.catList.Lines do
+					local line = server.catList.Lines[i]
+					if string.lower(line:GetColumnText(1)) == name then
+						server.catList:SelectItem( line )
+						break
+					end
+				end
+			end
+			break
+		end
+	end
+end
+
 --Process modular settings
 function server.processModules()
 	server.catList:Clear()
@@ -440,7 +460,7 @@ function plist.motdURLText:UpdateConvarValue()
 end
 function plist.motdURLText:OnEnter() self:UpdateConvarValue() end
 function plist.ConVarUpdated( sv_cvar, cl_cvar, ply, old_val, new_val )
-	if cl_cvar == "ulx_showMotd" then
+	if string.lower( cl_cvar ) == "ulx_showmotd" then
 		if tonumber( new_val ) == nil then --MOTD is enabled and set to a URL
 			plist.motdEnabled:SetValue( 1 )
 			plist.motdURLEnabled:SetValue( 1 )
