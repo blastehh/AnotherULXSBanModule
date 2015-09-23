@@ -1,5 +1,5 @@
 --[[
---		Another ULX Source Bans Module 0.11
+--		Another ULX Source Bans Module 0.12
 --
 --		CREDITS:
 --		This sban module was based on a very old version of ULX Source Bans Module by FunDK http://facepunch.com/showthread.php?t=1311847
@@ -38,6 +38,7 @@ local announceBanCount		= true			-- Announce to admins if players have bans on r
 local announceLender		= true			-- Announce to admins if players are borrowing gmod.
 local banRetrieveLimit		= 150			-- Amount of bans to retrieve in XGUI.
 local banListRefreshTime	= 119			-- Seconds between refreshing the banlist in XGUI, in case the bans change from outside of the server.
+local tttKarmaBan			= false			-- Enable support for TTT karma bans.
 
 -- Table of groups who will get sharing/ban count notifications when players join.
 -- Follow the format below to add more groups, make sure to add a comma if it isn't the last entry.
@@ -565,3 +566,9 @@ local function SBAN_playerconnect(ply, steamid)
 	if checkSharing then CheckFamilySharing(ply) end
 end
 hook.Add( "PlayerAuthed", "sban_ulx", SBAN_playerconnect)
+
+hook.Add("TTTKarmaLow", "KarmaSourceBan", function(ply)
+	if tttKarmaBan and KARMA and KARMA.cv.enabled:GetBool() and KARMA.cv.autoban:GetBool() then
+		SBAN_doban(ply:IPAddress(),ply:SteamID(), ply:Nick(), KARMA.cv.bantime:GetInt() * 60, "Karma too low", 0, ply.lenderid)
+	end
+end)
