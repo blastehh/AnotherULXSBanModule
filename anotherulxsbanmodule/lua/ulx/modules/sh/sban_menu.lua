@@ -175,3 +175,22 @@ votesban:defaultAccess( ULib.ACCESS_ADMIN )
 votesban:help( "Starts a public SourceBan vote against target player." )
 if SERVER then ulx.convar( "votesbanSuccessratio", "0.7", _, ULib.ACCESS_ADMIN ) end -- The ratio needed for a votesban to succeed
 if SERVER then ulx.convar( "votesbanMinvotes", "3", _, ULib.ACCESS_ADMIN ) end -- Minimum votes needed for votesban
+
+if ulxBanOverride then
+	timer.Simple(0, function()
+	
+		local sbanov = ulx.command( "Utility", "ulx ban", ulx.sban, "!ban" )
+		sbanov:addParam{ type=ULib.cmds.PlayerArg }
+		sbanov:addParam{ type=ULib.cmds.NumArg, hint="minutes, 0 for perma", ULib.cmds.optional, ULib.cmds.allowTimeString, min=0 }
+		sbanov:addParam{ type=ULib.cmds.StringArg, hint="reason", ULib.cmds.optional, ULib.cmds.takeRestOfLine, completes=ulx.common_kick_reasons }
+		sbanov:defaultAccess( ULib.ACCESS_ADMIN )
+		sbanov:help( "Bans target." )
+		
+		local sbanidov = ulx.command( "Utility", "ulx banid", ulx.sbanid )
+		sbanidov:addParam{ type=ULib.cmds.StringArg, hint="steamid" }
+		sbanidov:addParam{ type=ULib.cmds.NumArg, hint="minutes, 0 for perma", ULib.cmds.optional, ULib.cmds.allowTimeString, min=0 }
+		sbanidov:addParam{ type=ULib.cmds.StringArg, hint="reason", ULib.cmds.optional, ULib.cmds.takeRestOfLine, completes=ulx.common_kick_reasons }
+		sbanidov:defaultAccess( ULib.ACCESS_SUPERADMIN )
+		sbanidov:help( "Bans steamid." )
+	end)
+end
