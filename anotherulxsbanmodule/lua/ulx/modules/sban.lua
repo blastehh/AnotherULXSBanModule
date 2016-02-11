@@ -1,5 +1,5 @@
 --[[
---		Another ULX Source Bans Module 1.00
+--		Another ULX Source Bans Module 2.00
 --
 --		CREDITS:
 --		This sban module was based on a very old version of ULX Source Bans Module by FunDK http://facepunch.com/showthread.php?t=1311847
@@ -15,7 +15,7 @@
 --		The tab will currently only show ACTIVE bans.
 --]]
 
-require ("mysqloo")
+require( "pmysql" )
 
 -- Config section
 -- Add ulx_sban_serverid to your server.cfg
@@ -28,7 +28,6 @@ local SBANDATABASE_HOSTPORT	= 3306					--Database Port (Default mysql port 3306)
 local SBANDATABASE_DATABASE	= "sourceban"			--Database Database/Schema
 local SBANDATABASE_USERNAME	= "user"			--Database Username
 local SBANDATABASE_PASSWORD	= "pass"	--Database Password
-local database_sban = mysqloo.connect(SBANDATABASE_HOSTNAME, SBANDATABASE_USERNAME, SBANDATABASE_PASSWORD, SBANDATABASE_DATABASE, SBANDATABASE_HOSTPORT)
 
 local APIKey				= "1234567890"	-- See http://steamcommunity.com/dev/apikey
 local removeFromGroup		= true			-- Remove users from server groups if they don't exist in the sourcebans database
@@ -46,20 +45,24 @@ ulxBanOverride				= false			-- Override the default ulx ban to use sban.
 local adminTable = {
 	["superadmin"] = true,
 	["admin"] = true
+
+
+
 }
 
 
 -- This table excludes named groups from being removed, even if the option is turned on.
 -- Format is the same as the admin table above.
 local excludedGroups = {
+
 	["vip"] = true
 }
 
 -- Don't touch these
+local database_sban = database_sban or pmysql.connect( SBANDATABASE_HOSTNAME, SBANDATABASE_USERNAME, SBANDATABASE_PASSWORD, SBANDATABASE_DATABASE, SBANDATABASE_HOSTPORT )
 CreateConVar("ulx_sban_serverid", "-1", FCVAR_NONE, "Sets the SBAN ServerID for the Source Bans ULX module")
 local apiErrorCount = 0
 local apiLastCheck = apiLastCheck or 0
-local SBAN_Queue = SBAN_Queue or {}
 SBanTable = SBanTable or {}
 
 -- ServerID in server.cfg file
@@ -81,81 +84,24 @@ end)
 
 -- ############### Main Database Query Function ################
 -- #############################################################
+local function SBAN_SQL_Query_Callback(results, qTab)
+	qTab.cb(results, qTab)
+end
+
 local function SBAN_SQL_Query(sql, qTab)
-
-	local ply = qTab.ply
-	local steamid = qTab.steamid
-	local callback = qTab.cb
-	local aid = qTab.aid
-	local wait = qTab.wait
-	local result
-    local query = database_sban:query(sql)
-
-	if !query then
-		ServerLog("[SBAN] Query is empty?\n")
-		if ( database_sban:status() != mysqloo.DATABASE_CONNECTED ) then
-			database_sban:connect()
-			ErrorNoHalt("[SBAN] Empty query, retrying connection.\n")
-			return
-		else
-			error("[SBAN] Empty query, we're already connected.\n")
+	local qTab = qTab or {}
+	qTab.query = sql
+	if qTab.wait then
+		return function(sql)
+			local results = database_sban:query_sync(sql)
+			return results[1].data
 		end
-	end
-
-	query.onSuccess = function(_, data)
-
-		if !callback then 
-			result = data
-		else
-			callback(data, qTab)
-		end
-
-	end
-	
-	query.onError = function(_, err, sql)
-		
-		ServerLog("[SBAN][ERROR] "..err.."\n")
-		ServerLog("[SBAN][ERROR] "..sql.."\n")
-		if ( (database_sban:status() != mysqloo.DATABASE_CONNECTED) && callback ) then
-			table.insert( SBAN_Queue, { sql, qTab } )
-			database_sban:connect()
-			return
-		else
-			database_sban:connect()
-			database_sban:wait()
-		end
-		if ( database_sban:status() != mysqloo.DATABASE_CONNECTED ) then
-			ErrorNoHalt("[SBAN] Re-connection to database server failed.\n")
-			return
-		end
-	end
-	
-	query:start()
-	if !callback then
-		if wait then query:wait() end
-		return result
-	end
-	
-end
-
-database_sban.onConnected = function()
-	ServerLog("[SBAN][Init] Mysql successfully connected\n")
-	SBAN_SQL_Query("SET NAMES UTF8", {})
-	if SBAN_Queue then
-		for k, v in pairs( SBAN_Queue ) do
-			SBAN_SQL_Query( v[ 1 ], v[ 2 ]  )
-		end
-		SBAN_Queue = {}
+	elseif qTab.cb then
+		database_sban:query(sql, SBAN_SQL_Query_Callback, qTab)
+	else
+		database_sban:query(sql)
 	end
 end
-
-database_sban.onConnectionFailed = function( db, err ) 
-	ServerLog("[SBAN][Init] Mysql failed to connect\n")
-	ServerLog("[SBAN][Init] Mysql Error: "..tostring(err).."\n")
-end
-
--- Initial connect
-database_sban:connect()
 
 -- ############### Local Helper functions ###############
 -- ######################################################
@@ -205,11 +151,12 @@ function SBAN_doban(inip, steamid, name, length, reason, callingadmin, lenderid)
 	elseif callingadmin:IsPlayer() and type(callingadmin.sb_aid) == "number" then
 		adminid = callingadmin.sb_aid
 	end
+
 	local ip = string.Explode(":", inip)[1]
 	local qTab = {}
 	qTab.wait = false
 	
-	local time = os.time();
+	local time = os.time()
 	
 	local query = "INSERT INTO "..SBAN_PREFIX.."bans (ip, authid, name, created, ends, length, reason, aid, sid) "
 	query = query.." VALUES ('"..database_sban:escape(ip).."', '"..database_sban:escape(steamid).."', '"..database_sban:escape(name).."',"..time..", "..(time + length)..", "..length..", '"..database_sban:escape(reason).."', "..adminid..", "..SBAN_SERVERID..");"
@@ -294,6 +241,7 @@ end
 
 local function UpdateBanList(result, qTab)
 	local tempTable = {}
+
 	for k,v in pairs(result) do
 		tempTable[v.authid] = {}
 		tempTable[v.authid].bid = v.bid
@@ -414,6 +362,7 @@ local function DetermineBanned(result, qTab)
 	local ply = qTab.ply
 	local steamid = qTab.steamid
 	
+
 	if #result > 0 then
 		
 		for k,v in pairs(result) do
@@ -437,6 +386,7 @@ local function DetermineBanned(result, qTab)
 		else
 			banText = string.format("%s (%s) has %s %s on record.", ply:Nick(), steamid, ply.BanCount, banPlural)
 		end
+
 			
 		if announceBanCount then
 		
@@ -463,6 +413,7 @@ local function StartBanCheck(ply, steamid)
 	qTab.steamid = steamid
 	qTab.cb = function(result, qTab) DetermineBanned(result, qTab) end
 	
+
 	SBAN_SQL_Query("SELECT bid, authid, ends, length, reason, RemoveType FROM "..SBAN_PREFIX.."bans WHERE authid = '" ..steamid.. "'", qTab)
 end
 
@@ -470,6 +421,8 @@ end
 -- ################################################
 
 local function AnnounceLender(ply,lender)
+
+
 	if !IsValid(ply) or !announceLender then return end
 	
 	timer.Create("FSAnnounce"..ply:SteamID(),10,1, function()
@@ -485,11 +438,26 @@ end
 
 local function HandleSharedPlayer(ply, lenderSteamID)
 	
+
+
+
 	apiErrorCount = (apiErrorCount > 1) and (apiErrorCount - 1) or 0
 	if !IsValid(ply) then return end
 
 	AnnounceLender(ply,lenderSteamID)
 	
+
+
+
+
+
+
+
+
+
+
+
+
 	ply.familyshared = true
 	ply.lenderid = lenderSteamID
     StartBanCheck(ply, lenderSteamID)
@@ -532,7 +500,11 @@ local function CheckFamilySharing(ply)
             if lender ~= "0" then
 				if !IsValid(ply) then return end
 				local lenderSteamID = util.SteamIDFrom64(lender)
+
+
+
 				HandleSharedPlayer(ply, lenderSteamID)
+
 
             end
         end,
