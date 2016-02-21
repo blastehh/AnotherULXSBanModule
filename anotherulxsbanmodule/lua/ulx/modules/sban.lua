@@ -15,8 +15,6 @@
 --		The tab will currently only show ACTIVE bans.
 --]]
 
-require( "pmysql" )
-
 -- Config section
 -- Add ulx_sban_serverid to your server.cfg
 
@@ -59,7 +57,7 @@ local excludedGroups = {
 }
 
 -- Don't touch these
-local database_sban = database_sban or pmysql.connect( SBANDATABASE_HOSTNAME, SBANDATABASE_USERNAME, SBANDATABASE_PASSWORD, SBANDATABASE_DATABASE, SBANDATABASE_HOSTPORT )
+local database_sban = database_sban or tmysql.initialize( SBANDATABASE_HOSTNAME, SBANDATABASE_USERNAME, SBANDATABASE_PASSWORD, SBANDATABASE_DATABASE, SBANDATABASE_HOSTPORT )
 CreateConVar("ulx_sban_serverid", "-1", FCVAR_NONE, "Sets the SBAN ServerID for the Source Bans ULX module")
 local apiErrorCount = 0
 local apiLastCheck = apiLastCheck or 0
@@ -84,8 +82,8 @@ end)
 
 -- ############### Main Database Query Function ################
 -- #############################################################
-local function SBAN_SQL_Query_Callback(results, qTab)
-	qTab.cb(results, qTab)
+local function SBAN_SQL_Query_Callback(qTab, results)
+	qTab.cb(results[1].data, qTab)
 end
 
 local function SBAN_SQL_Query(sql, qTab)
@@ -93,13 +91,12 @@ local function SBAN_SQL_Query(sql, qTab)
 	qTab.query = sql
 	if qTab.wait then
 		return function(sql)
-			local results = database_sban:query_sync(sql)
-			return results[1].data
+			database_sban:Query(sql, function(results) return results[1].data end)
 		end
 	elseif qTab.cb then
-		database_sban:query(sql, SBAN_SQL_Query_Callback, qTab)
+		database_sban:Query(sql, SBAN_SQL_Query_Callback, qTab)
 	else
-		database_sban:query(sql)
+		database_sban:Query(sql, function(results) end)
 	end
 end
 
@@ -126,7 +123,7 @@ local function ReportBlock(bid, name)
 	local qTab = {}
 	qTab.wait = false
 	local query = "INSERT INTO "..SBAN_PREFIX.."banlog (sid, time, name, bid)"
-	query = query.." VALUES ("..SBAN_SERVERID..", "..ostime..", '"..database_sban:escape(name).."', "..bid..");"
+	query = query.." VALUES ("..SBAN_SERVERID..", "..ostime..", '"..database_sban:Escape(name).."', "..bid..");"
 	
 	SBAN_SQL_Query(query, qTab)
 	
@@ -159,13 +156,13 @@ function SBAN_doban(inip, steamid, name, length, reason, callingadmin, lenderid)
 	local time = os.time()
 	
 	local query = "INSERT INTO "..SBAN_PREFIX.."bans (ip, authid, name, created, ends, length, reason, aid, sid) "
-	query = query.." VALUES ('"..database_sban:escape(ip).."', '"..database_sban:escape(steamid).."', '"..database_sban:escape(name).."',"..time..", "..(time + length)..", "..length..", '"..database_sban:escape(reason).."', "..adminid..", "..SBAN_SERVERID..");"
+	query = query.." VALUES ('"..database_sban:Escape(ip).."', '"..database_sban:Escape(steamid).."', '"..database_sban:Escape(name).."',"..time..", "..(time + length)..", "..length..", '"..database_sban:Escape(reason).."', "..adminid..", "..SBAN_SERVERID..");"
 	SBAN_SQL_Query(query, qTab)
 	
 	if lenderid and banLender then
 		
 		local query2 = "INSERT INTO "..SBAN_PREFIX.."bans (ip, authid, name, created, ends, length, reason, aid, sid) "
-		query2 = query2.."VALUES ('"..database_sban:escape(ip).."', '"..database_sban:escape(lenderid).."', '"..database_sban:escape(name).."',"..time..", "..(time + length)..", "..length..", '"..database_sban:escape(reason).."', "..adminid..", "..SBAN_SERVERID..");"
+		query2 = query2.."VALUES ('"..database_sban:Escape(ip).."', '"..database_sban:Escape(lenderid).."', '"..database_sban:Escape(name).."',"..time..", "..(time + length)..", "..length..", '"..database_sban:Escape(reason).."', "..adminid..", "..SBAN_SERVERID..");"
 		SBAN_SQL_Query(query2, qTab)
 		
 	end
@@ -206,14 +203,14 @@ function SBAN_unban(steamid, ply, ureason)
 	local adminID = ply.sb_aid or 0
 	local qTab = {}
 	qTab.wait = false
-	SBAN_SQL_Query("UPDATE "..SBAN_PREFIX.."bans SET RemovedOn = "..os.time()..", RemovedBy = "..adminID..", RemoveType = 'U', ureason = '"..database_sban:escape(ureason).."' WHERE authid = '"..database_sban:escape(steamid).."' and RemoveType is null", qTab)
+	SBAN_SQL_Query("UPDATE "..SBAN_PREFIX.."bans SET RemovedOn = "..os.time()..", RemovedBy = "..adminID..", RemoveType = 'U', ureason = '"..database_sban:Escape(ureason).."' WHERE authid = '"..database_sban:Escape(steamid).."' and RemoveType is null", qTab)
 	XGUIRefreshBans()
 end
 
 function SBAN_canunban(steamid, ply)
 	local adminID = ply.sb_aid or 0
 	
-	local query = "SELECT * FROM "..SBAN_PREFIX.."bans WHERE authid = '"..database_sban:escape(steamid).."' and RemoveType is null"
+	local query = "SELECT * FROM "..SBAN_PREFIX.."bans WHERE authid = '"..database_sban:Escape(steamid).."' and RemoveType is null"
 	if !ULib.ucl.query( ply, "ulx unsbanall" ) then
 		query = query .. " and aid = "..adminID
 	end
@@ -232,7 +229,7 @@ function SBAN_updateban(steamid, ply, bantime, reason, name)
 	local qTab = {}
 	qTab.wait = false
 	local query = "UPDATE "..SBAN_PREFIX.."bans SET ends = created + "..bantime
-	query = query .. ", length = "..bantime..", name = '"..database_sban:escape(updateName).."', reason = '"..database_sban:escape(reason).."' WHERE authid = '"..database_sban:escape(steamid).."' and RemoveType is null"
+	query = query .. ", length = "..bantime..", name = '"..database_sban:Escape(updateName).."', reason = '"..database_sban:Escape(reason).."' WHERE authid = '"..database_sban:Escape(steamid).."' and RemoveType is null"
 	SBAN_SQL_Query(query, qTab)
 	XGUIRefreshBans()
 end
