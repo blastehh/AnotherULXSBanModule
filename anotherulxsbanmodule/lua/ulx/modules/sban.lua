@@ -1,5 +1,5 @@
 --[[
---		Another ULX Source Bans Module 2.00
+--		Another ULX Source Bans Module 2.10
 --
 --		CREDITS:
 --		This sban module was based on a very old version of ULX Source Bans Module by FunDK http://facepunch.com/showthread.php?t=1311847
@@ -56,11 +56,12 @@ local excludedGroups = {
 	["vip"] = true
 }
 
+require("tmysql4")
 -- Don't touch these
-local database_sban = database_sban or tmysql.initialize( SBANDATABASE_HOSTNAME, SBANDATABASE_USERNAME, SBANDATABASE_PASSWORD, SBANDATABASE_DATABASE, SBANDATABASE_HOSTPORT )
+local database_sban = tmysql.initialize( SBANDATABASE_HOSTNAME, SBANDATABASE_USERNAME, SBANDATABASE_PASSWORD, SBANDATABASE_DATABASE, SBANDATABASE_HOSTPORT )
 CreateConVar("ulx_sban_serverid", "-1", FCVAR_NONE, "Sets the SBAN ServerID for the Source Bans ULX module")
 local apiErrorCount = 0
-local apiLastCheck = apiLastCheck or 0
+local apiLastCheck = 0
 SBanTable = SBanTable or {}
 
 -- ServerID in server.cfg file
