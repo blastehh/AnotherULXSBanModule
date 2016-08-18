@@ -15,7 +15,7 @@
 --		The tab will currently only show ACTIVE bans.
 --
 --		Config files will be created after the first run at garrysmod/data/sban
---		Config settings in this file will be ignored once the config files have been created.
+--		Config settings in this file will be ignored once the config files have been created after the first run.
 --]]
 
 -- Config section
@@ -45,14 +45,14 @@ ulxBanOverride				= false			-- Override the default ulx ban to use sban.
 -- Follow the format below to add more groups, make sure to add a comma if it isn't the last entry.
 local adminTable = {
 	["superadmin"] = true,
-	["admin"] = true
+	["admin"] = true,
 }
 
 
 -- This table excludes named groups from being removed, even if the option is turned on.
 -- Format is the same as the admin table above.
 local excludedGroups = {
-	["vip"] = true
+	["vip"] = true,
 }
 if !file.Exists("sban", "DATA") then
 	file.CreateDir("sban")
