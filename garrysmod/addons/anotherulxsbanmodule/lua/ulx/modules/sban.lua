@@ -93,6 +93,7 @@ else
 	APIKey = configTable.apikey
 	removeFromGroup = configTable.removefromgroup == "yes"
 	checkSharing = configTable.checksharing == "yes"
+	checkIP = configTable.checkIP and configTable.checkIP == "yes"
 	banLender = configTable.banlender == "yes"
 	announceBanCount = configTable.announcebancount == "yes"
 	announceLender = configTable.announcelender == "yes"
