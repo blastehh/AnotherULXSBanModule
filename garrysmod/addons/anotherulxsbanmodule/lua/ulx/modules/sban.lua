@@ -33,6 +33,7 @@ local SBANDATABASE_PASSWORD	= "pass"	--Database Password
 local APIKey				= "1234567890" -- See http://steamcommunity.com/dev/apikey
 local removeFromGroup		= true			-- Remove users from server groups if they don't exist in the sourcebans database
 local checkSharing			= true			-- Check if players are borrowing the game, !!!! THIS REQUIRES AN API KEY !!!!!
+local checkIP				= false			-- Check ban database using IP.
 local banLender				= true			-- Ban the lender of the game as well if the player gets banned?
 local announceBanCount		= true			-- Announce to admins if players have bans on record.
 local announceLender		= true			-- Announce to admins if players are borrowing gmod.
@@ -70,6 +71,7 @@ if !file.Exists("sban/config.txt", "DATA") then
 	configTable.APIKey = APIKey
 	configTable.removeFromGroup = removeFromGroup and "yes" or "no"
 	configTable.checkSharing = checkSharing and "yes" or "no"
+	configTable.checkIP = checkIP and "yes" or "no"
 	configTable.banLender = banLender and "yes" or "no"
 	configTable.announceBanCount = announceBanCount and "yes" or "no"
 	configTable.announceLender = announceLender and "yes" or "no"
@@ -119,6 +121,7 @@ CreateConVar("ulx_sban_serverid", "-1", FCVAR_NONE, "Sets the SBAN ServerID for 
 local apiErrorCount = 0
 local apiLastCheck = 0
 SBanTable = SBanTable or {}
+local ipCache = {}
 
 -- ServerID in server.cfg file
 cvars.AddChangeCallback( "ulx_sban_serverid", function()
@@ -505,9 +508,15 @@ local function StartBanCheck(ply, steamID)
 	local qTab = {}
 	qTab.ply = ply
 	qTab.steamID = steamID
+	qTab.ip = string.Explode(":", ply:IPAddress())[1]
 	qTab.cb = function(result, qTab) DetermineBanned(result, qTab) end
 	
 	SBAN_SQL_Query("SELECT bid, authid, ends, length, reason, RemoveType FROM "..database_sban:escape(SBAN_PREFIX).."bans WHERE authid = '" ..database_sban:escape(steamID).. "'", qTab)
+	
+	if checkIP and not ipCache[qTab.ip] then
+		SBAN_SQL_Query("SELECT bid, authid, ends, length, reason, RemoveType FROM "..database_sban:escape(SBAN_PREFIX).."bans WHERE ip = '" ..database_sban:escape(qTab.ip).. "'", qTab)
+		ipCache[qTab.ip] = true
+	end
 end
 
 -- ############### Family Sharing #################
@@ -612,9 +621,15 @@ local function PW_BanCheck(sid64, ip, svPass, clPass, name)
 	local qTab = {}
 	qTab.name = name
 	qTab.steamID = util.SteamIDFrom64(sid64)
+	qTab.ip = string.Explode(":", ip)[1]
 	qTab.cb = function(result, qTab) DetermineBanned(result, qTab, true) end
 	
 	SBAN_SQL_Query("SELECT bid, authid, ends, length, reason, RemoveType FROM "..database_sban:escape(SBAN_PREFIX).."bans WHERE authid = '" ..database_sban:escape(qTab.steamID).. "'", qTab)
+	
+	if checkIP then
+		SBAN_SQL_Query("SELECT bid, authid, ends, length, reason, RemoveType FROM "..database_sban:escape(SBAN_PREFIX).."bans WHERE ip = '" ..database_sban:escape(qTab.ip).. "'", qTab)
+		ipCache[qTab.ip] = true
+	end
 end
 
 hook.Add( "PlayerAuthed", "sban_ulx", SBAN_playerconnect)
